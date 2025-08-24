@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-sm p-4">
+    <h2>Welcome, {{ user.username }} 🎉</h2>
+    <p class="text-muted">You are logged in as <b>{{ user.email }}</b>.</p>
+    <a href="{% url 'users:logout' %}" class="btn btn-danger mt-3">Logout</a>
+  </div>
+</div>
+{% endblock %}
