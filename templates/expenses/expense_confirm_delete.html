@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-sm text-center">
+  <h2 class="text-xl font-bold mb-4">Delete Expense</h2>
+  <p class="mb-6">Are you sure you want to delete this expense?</p>
+  <p class="mb-6 text-gray-700">
+    <strong>{{ expense.date }}</strong> – ₹{{ expense.amount }} 
+    ({{ expense.category }})
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" 
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+      Yes, Delete
+    </button>
+    <a href="{% url 'expenses:expense_list' %}" 
+       class="ml-2 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">
+      Cancel
+    </a>
+  </form>
+</div>
+{% endblock %}

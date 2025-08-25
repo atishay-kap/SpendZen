@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Analytics Dashboard</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="card p-4 shadow">
+    <h4 class="mb-2">Expenses by Category</h4>
+    <canvas id="categoryChart"></canvas>
+  </div>
+
+  <div class="card p-4 shadow">
+    <h4 class="mb-2">Expenses by Month</h4>
+    <canvas id="monthlyChart"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+async function loadCharts() {
+  const categoryRes = await fetch("{% url 'analytics:expenses_by_category' %}");
+  const categoryData = await categoryRes.json();
+
+  const monthlyRes = await fetch("{% url 'analytics:expenses_by_month' %}");
+  const monthlyData = await monthlyRes.json();
+
+  // Category Chart
+  new Chart(document.getElementById("categoryChart"), {
+    type: "pie",
+    data: {
+      labels: categoryData.map(d => d.category__name || "Uncategorized"),
+      datasets: [{
+        data: categoryData.map(d => d.total),
+        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4CAF50", "#9C27B0"],
+      }]
+    }
+  });
+
+  // Monthly Chart
+  new Chart(document.getElementById("monthlyChart"), {
+    type: "line",
+    data: {
+      labels: monthlyData.map(d => d.month),
+      datasets: [{
+        label: "Expenses",
+        data: monthlyData.map(d => d.total),
+        borderColor: "#36A2EB",
+        fill: false
+      }]
+    }
+  });
+}
+loadCharts();
+</script>
+{% endblock %}
