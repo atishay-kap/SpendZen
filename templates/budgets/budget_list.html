@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4 text-xl font-semibold">My Budgets</h2>
+
+<a href="{% url 'budgets:budget_create' %}" 
+   class="bg-green-500 text-white px-4 py-2 rounded shadow hover:bg-green-600">
+   + Add Budget
+</a>
+
+<div class="mt-6 space-y-4">
+  {% for budget in budgets %}
+    <div class="p-4 border rounded shadow flex justify-between items-center">
+      <div>
+        <p class="font-medium">{{ budget.month }} {{ budget.year }}</p>
+        <p class="text-sm text-gray-600">
+          Planned: ₹{{ budget.amount }} | Spent: ₹{{ budget.spent }} | Remaining: ₹{{ budget.amount|floatformat:2|add:"-budget.spent" }}
+        </p>
+      </div>
+      <a href="{% url 'budgets:budget_detail' budget.pk %}" 
+         class="text-blue-500 hover:underline">View</a>
+    </div>
+  {% empty %}
+    <p class="text-gray-600">No budgets yet. Start by adding one!</p>
+  {% endfor %}
+</div>
+{% endblock %}
