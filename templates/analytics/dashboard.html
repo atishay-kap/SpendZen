@@ -1,55 +1,96 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h2 class="mb-4">Analytics Dashboard</h2>
+<div class="max-w-5xl mx-auto p-6 space-y-6">
+  <h1 class="text-2xl font-semibold">Dashboard</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <div class="card p-4 shadow">
-    <h4 class="mb-2">Expenses by Category</h4>
-    <canvas id="categoryChart"></canvas>
+  <div class="grid md:grid-cols-2 gap-6">
+    <!-- Category Chart -->
+    <div class="p-4 rounded-xl border">
+      <h2 class="font-medium mb-2">Expenses by Category</h2>
+      <canvas id="catChart"></canvas>
+    </div>
+
+    <!-- Monthly Totals -->
+    <div class="p-4 rounded-xl border">
+      <h2 class="font-medium mb-2">Expenses by Month</h2>
+      <canvas id="monthChart"></canvas>
+    </div>
   </div>
 
-  <div class="card p-4 shadow">
-    <h4 class="mb-2">Expenses by Month</h4>
-    <canvas id="monthlyChart"></canvas>
+  <!-- Daily Cumulative -->
+  <div class="p-4 rounded-xl border">
+    <h2 class="font-medium mb-2">Daily Cumulative (Current Month)</h2>
+    <canvas id="dailyChart"></canvas>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-async function loadCharts() {
-  const categoryRes = await fetch("{% url 'analytics:expenses_by_category' %}");
-  const categoryData = await categoryRes.json();
-
-  const monthlyRes = await fetch("{% url 'analytics:expenses_by_month' %}");
-  const monthlyData = await monthlyRes.json();
-
-  // Category Chart
-  new Chart(document.getElementById("categoryChart"), {
-    type: "pie",
-    data: {
-      labels: categoryData.map(d => d.category__name || "Uncategorized"),
-      datasets: [{
-        data: categoryData.map(d => d.total),
-        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4CAF50", "#9C27B0"],
-      }]
-    }
+// Category chart
+fetch("{% url 'expenses_by_category' %}")
+  .then(res => res.json())
+  .then(data => {
+    const labels = data.map(x => x.category__name || "Uncategorized");
+    const values = data.map(x => x.total);
+    new Chart(document.getElementById("catChart"), {
+      type: "doughnut",
+      data: { 
+        labels, 
+        datasets: [{
+          label: "Expenses by Category",
+          data: values 
+        }] 
+      }
+    });
   });
 
-  // Monthly Chart
-  new Chart(document.getElementById("monthlyChart"), {
-    type: "line",
-    data: {
-      labels: monthlyData.map(d => d.month),
-      datasets: [{
-        label: "Expenses",
-        data: monthlyData.map(d => d.total),
-        borderColor: "#36A2EB",
-        fill: false
-      }]
-    }
+// Monthly totals (bar chart)
+fetch("{% url 'expenses_by_month' %}")
+  .then(res => res.json())
+  .then(data => {
+    const labels = data.map(x => new Date(x.month).toLocaleDateString("en-US", { month: "short", year: "numeric" }));
+    const values = data.map(x => x.total);
+    new Chart(document.getElementById("monthChart"), {
+      type: "bar",
+      data: { 
+        labels, 
+        datasets: [{
+          label: "Monthly Total",
+          data: values 
+        }] 
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: "Month" } },
+          y: { title: { display: true, text: "Amount" } }
+        }
+      }
+    });
   });
-}
-loadCharts();
+
+// Daily cumulative (line chart)
+fetch("{% url 'daily_cumulative_expenses' %}")
+  .then(res => res.json())
+  .then(data => {
+    const labels = data.map(x => new Date(x.day).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+    const values = data.map(x => x.total);
+    new Chart(document.getElementById("dailyChart"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Cumulative Spending",
+          data: values,
+          fill: true
+        }]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: "Day" } },
+          y: { title: { display: true, text: "Amount" } }
+        }
+      }
+    });
+  });
 </script>
 {% endblock %}

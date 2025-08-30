@@ -3,7 +3,6 @@ from .models import Budget
 
 @admin.register(Budget)
 class BudgetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'month', 'amount', 'spent', 'created_at', 'updated_at')
-    list_filter = ('month', 'user')
-    search_fields = ('user__email',)
-    ordering = ('-month',)
+    list_display = ("user", "month", "year", "amount", "spent", "remaining")
+    list_filter = ("year", "month", "user")
+    search_fields = ("user__username",)

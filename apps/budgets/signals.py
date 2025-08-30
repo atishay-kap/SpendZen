@@ -1,24 +1,33 @@
-# apps/budgets/signals.py
+from django.db.models import Sum
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from apps.expenses.models import Expense
 from .models import Budget
-from django.db.models import Sum
 
-def update_budget_spent(user, year, month):
-    budget = Budget.objects.filter(user=user, year=year, month=month).first()
-    if budget:
-        total_spent = (
-            Expense.objects.filter(user=user, date__year=year, date__month=month)
-            .aggregate(total=Sum("amount"))["total"] or 0
-        )
-        budget.spent = total_spent
-        budget.save(update_fields=["spent"])
+def update_budget(budget):
+    total = Expense.objects.filter(
+        user=budget.user,
+        date__year=budget.year,
+        date__month=budget.month,
+    ).aggregate(total=Sum("amount"))["total"] or 0
+    budget.spent = total
+    budget.save(update_fields=["spent"])
 
 @receiver(post_save, sender=Expense)
-def expense_saved(sender, instance, **kwargs):
-    update_budget_spent(instance.user, instance.date.year, instance.date.month)
-
 @receiver(post_delete, sender=Expense)
-def expense_deleted(sender, instance, **kwargs):
-    update_budget_spent(instance.user, instance.date.year, instance.date.month)
+def handle_expense_change(sender, instance, **kwargs):
+    try:
+        budget = Budget.objects.get(
+            user=instance.user,
+            year=instance.date.year,
+            month=instance.date.month,
+        )
+        update_budget(budget)
+    except Budget.DoesNotExist:
+        Budget.objects.create(
+            user=instance.user, 
+            year=instance.date.year, 
+            month=instance.date.month, 
+            amount=0, 
+            spent=instance.amount
+            )
