@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from apps.expenses.models import Expense
+from apps.budgets.models import Budget
 
 
 @login_required
@@ -58,3 +59,26 @@ def daily_cumulative_expenses(request):
         cumulative.append({"day": row["day"], "total": running})
 
     return JsonResponse(cumulative, safe=False)
+
+def current_month_budgets(request):
+    today=now().date()
+    budgets = Budget.objects.filter(
+        user=request.user , year=today.year , month = today.month
+        )
+    
+    if not budgets.exists():
+        budgets = Budget.objects.filter(user=request.user).order_by("-year","-month")[:1]
+    
+    data = []
+    for b in budgets:
+        remaining = b.amount - b.spent
+        data.append({
+            "amount": float(b.amount),
+            "spent": float(b.spent),
+            "remaining": float(remaining),
+            "overspent": remaining < 0,
+            "month": b.month,
+            "year": b.year,
+        })
+        
+    return JsonResponse(data , safe=False)

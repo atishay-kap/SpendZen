@@ -11,17 +11,21 @@ def budget_list(request):
 
 @login_required
 def budget_create(request):
-    if request.method=="POST":
+    if request.method == "POST":
         form = BudgetForm(request.POST)
         if form.is_valid():
             budget = form.save(commit=False)
             budget.user = request.user
-            budget.save()
-            messages.success(request , "Budget Created Successfully!!")
-            return redirect("budgets:budget_list")
+            try:
+                budget.save()
+                messages.success(request, "Budget created successfully!")
+                return redirect("budgets:budget_list")
+            except Exception:
+                # This will catch unique_together duplicates
+                form.add_error(None, "You already have a budget for this month.")
     else:
-        form = BudgetForm
-    return render(request , "budgets/budget_form.html" , {"form":form})
+        form = BudgetForm()
+    return render(request, "budgets/budget_form.html", {"form": form})
 
 @login_required
 def budget_detail(request , id):
@@ -29,17 +33,20 @@ def budget_detail(request , id):
     return render(request , "budgets/budget_detail.html" , {"budget":budget})
 
 @login_required
-def budget_edit(request , id):
-    budget = get_object_or_404(Budget , id=id , user=request.user)
-    if request.method=="POST":
-        form = BudgetForm(request.POST , intance=budget)
+def budget_edit(request, id):
+    budget = get_object_or_404(Budget, id=id, user=request.user)
+    if request.method == "POST":
+        form = BudgetForm(request.POST, instance=budget)
         if form.is_valid():
-            form.save()
-            messages.success(request , "Budget Updated Successfully!!")
-            return redirect("budgets:budget_list")
+            try:
+                form.save()
+                messages.success(request, "Budget updated successfully!")
+                return redirect("budgets:budget_detail", id=budget.id)
+            except Exception:
+                form.add_error(None, "Another budget for this month already exists.")
     else:
-        form = BudgetForm(instance=Budget)
-    return render(request , "budgets/budget_form.html" , {"form":form})
+        form = BudgetForm(instance=budget)
+    return render(request, "budgets/budget_form.html", {"form": form})
 
 
 @login_required

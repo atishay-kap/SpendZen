@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block content %}
 <h2 class="mb-4 text-xl font-semibold">My Budgets</h2>
 
@@ -12,9 +11,9 @@
   {% for budget in budgets %}
     <div class="p-4 border rounded shadow flex justify-between items-center">
       <div>
-        <p class="font-medium">{{ budget.month }} {{ budget.year }}</p>
+        <p class="font-medium">{{ budget.get_month_display }} {{ budget.year }}</p>
         <p class="text-sm text-gray-600">
-          Planned: ₹{{ budget.amount }} | Spent: ₹{{ budget.spent }} | Remaining: ₹{{ budget.amount|floatformat:2|add:"-budget.spent" }}
+          Planned: ₹{{ budget.amount }} | Spent: ₹{{ budget.spent }} | Remaining: ₹{{ budget.remaining }}
         </p>
       </div>
       <a href="{% url 'budgets:budget_detail' budget.pk %}" 

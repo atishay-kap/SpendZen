@@ -5,29 +5,32 @@ from apps.expenses.models import Expense
 from .models import Budget
 
 def update_budget(budget):
-    total = Expense.objects.filter(
-        user=budget.user,
-        date__year=budget.year,
-        date__month=budget.month,
-    ).aggregate(total=Sum("amount"))["total"] or 0
+    """
+    Recalculate and update the spent value for a given budget.
+    """
+    total = (
+        Expense.objects.filter(
+            user=budget.user,
+            date__year=budget.year,
+            date__month=budget.month,
+        ).aggregate(total=Sum("amount"))["total"] or 0
+    )
     budget.spent = total
     budget.save(update_fields=["spent"])
 
-@receiver(post_save, sender=Expense)
-@receiver(post_delete, sender=Expense)
+
+@receiver([post_save, post_delete], sender=Expense)
 def handle_expense_change(sender, instance, **kwargs):
-    try:
-        budget = Budget.objects.get(
-            user=instance.user,
-            year=instance.date.year,
-            month=instance.date.month,
-        )
-        update_budget(budget)
-    except Budget.DoesNotExist:
-        Budget.objects.create(
-            user=instance.user, 
-            year=instance.date.year, 
-            month=instance.date.month, 
-            amount=0, 
-            spent=instance.amount
-            )
+    """
+    Whenever an Expense is created, updated, or deleted:
+    - If a Budget exists for that user/month/year → update it.
+    - If not → create one with amount=0 and spent = actual total.
+    """
+    budget, created = Budget.objects.get_or_create(
+        user=instance.user,
+        year=instance.date.year,
+        month=instance.date.month,
+        defaults={"amount": 0, "spent": 0},
+    )
+
+    update_budget(budget)

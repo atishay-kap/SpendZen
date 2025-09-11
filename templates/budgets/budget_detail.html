@@ -1,13 +1,12 @@
 {% extends "base.html" %}
-
 {% block content %}
 <h2 class="mb-4 text-xl font-semibold">Budget Details</h2>
 
 <div class="p-6 bg-white rounded shadow">
-  <p><strong>Month:</strong> {{ budget.month }} {{ budget.year }}</p>
+  <p><strong>Month:</strong> {{ budget.get_month_display }} {{ budget.year }}</p>
   <p><strong>Planned:</strong> ₹{{ budget.amount }}</p>
   <p><strong>Spent:</strong> ₹{{ budget.spent }}</p>
-  <p><strong>Remaining:</strong> ₹{{ budget.amount|floatformat:2|add:"-budget.spent" }}</p>
+  <p><strong>Remaining:</strong> ₹{{ budget.remaining }}</p>
 </div>
 
 <a href="{% url 'budgets:budget_list' %}" 

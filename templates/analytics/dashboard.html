@@ -3,6 +3,9 @@
 <div class="max-w-5xl mx-auto p-6 space-y-6">
   <h1 class="text-2xl font-semibold">Dashboard</h1>
 
+  <!-- Summary Card -->
+  <div id="summaryCard" class="p-4 rounded-xl border bg-gray-50 text-center text-lg font-medium"></div>
+
   <div class="grid md:grid-cols-2 gap-6">
     <!-- Category Chart -->
     <div class="p-4 rounded-xl border">
@@ -21,6 +24,12 @@
   <div class="p-4 rounded-xl border">
     <h2 class="font-medium mb-2">Daily Cumulative (Current Month)</h2>
     <canvas id="dailyChart"></canvas>
+  </div>
+
+  <!-- Budgets Progress -->
+  <div class="p-4 rounded-xl border">
+    <h2 class="font-medium mb-4">Budgets (This Month)</h2>
+    <div id="budgetsContainer" class="space-y-4"></div>
   </div>
 </div>
 
@@ -81,7 +90,9 @@ fetch("{% url 'daily_cumulative_expenses' %}")
         datasets: [{
           label: "Cumulative Spending",
           data: values,
-          fill: true
+          fill: true,
+          borderColor: "rgb(75, 192, 192)",
+          tension: 0.2
         }]
       },
       options: {
@@ -91,6 +102,61 @@ fetch("{% url 'daily_cumulative_expenses' %}")
         }
       }
     });
+  });
+
+// Fetch and render budgets
+fetch("{% url 'current_month_budgets' %}")
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById("budgetsContainer");
+    const summary = document.getElementById("summaryCard");
+
+    if (data.length === 0) {
+      container.innerHTML = "<p class='text-gray-500'>No budgets set for this month.</p>";
+      summary.innerHTML = "<p class='text-gray-500'>No data to summarize.</p>";
+      return;
+    }
+
+    let totalPlanned = 0, totalSpent = 0;
+    data.forEach((b, idx) => {
+      totalPlanned += parseFloat(b.amount);
+      totalSpent += parseFloat(b.spent);
+
+      const percent = Math.min((b.spent / b.amount) * 100, 100);
+      const color = b.overspent ? "bg-red-500" : percent > 80 ? "bg-yellow-500" : "bg-green-500";
+
+      // format month/year
+      const monthName = new Date(b.year, b.month - 1).toLocaleString("en-US", { month: "short" });
+
+      container.innerHTML += `
+        <div>
+          <div class="flex justify-between mb-1 text-sm">
+            <span>Budget ${idx + 1} (${monthName} ${b.year})</span>
+            <span>Spent: ₹${b.spent} / Planned: ₹${b.amount} | Remaining: ₹${b.remaining}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-4">
+            <div class="h-4 rounded-full ${color}" style="width: ${percent}%;"></div>
+          </div>
+          ${b.overspent ? "<p class='text-red-600 text-xs mt-1'>Overspent!</p>" : ""}
+        </div>
+      `;
+    });
+
+    // update summary card with status
+    const remaining = totalPlanned - totalSpent;
+    const percentSpent = (totalSpent / totalPlanned) * 100;
+
+    let status = "🟢 On Track";
+    if (totalSpent > totalPlanned) {
+      status = "🔴 Overspent";
+    } else if (percentSpent >= 80) {
+      status = "🟡 Nearing Limit";
+    }
+
+    summary.innerHTML = `
+      <p>Total Planned: ₹${totalPlanned} | Total Spent: ₹${totalSpent} | Remaining: ₹${remaining}</p>
+      <p class="mt-2">Status: <span class="font-semibold">${status}</span></p>
+    `;
   });
 </script>
 {% endblock %}
