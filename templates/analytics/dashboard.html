@@ -35,6 +35,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Helper: Tailwind-ish colors
+const chartColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+
 // Category chart
 fetch("{% url 'expenses_by_category' %}")
   .then(res => res.json())
@@ -47,7 +50,8 @@ fetch("{% url 'expenses_by_category' %}")
         labels, 
         datasets: [{
           label: "Expenses by Category",
-          data: values 
+          data: values,
+          backgroundColor: chartColors
         }] 
       }
     });
@@ -65,7 +69,8 @@ fetch("{% url 'expenses_by_month' %}")
         labels, 
         datasets: [{
           label: "Monthly Total",
-          data: values 
+          data: values,
+          backgroundColor: chartColors
         }] 
       },
       options: {
@@ -91,7 +96,8 @@ fetch("{% url 'daily_cumulative_expenses' %}")
           label: "Cumulative Spending",
           data: values,
           fill: true,
-          borderColor: "rgb(75, 192, 192)",
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59,130,246,0.2)",
           tension: 0.2
         }]
       },
@@ -105,7 +111,7 @@ fetch("{% url 'daily_cumulative_expenses' %}")
   });
 
 // Fetch and render budgets
-fetch("{% url 'current_month_budgets' %}")
+fetch("{% url 'budgets:current_month_budgets' %}")
   .then(res => res.json())
   .then(data => {
     const container = document.getElementById("budgetsContainer");
@@ -118,21 +124,19 @@ fetch("{% url 'current_month_budgets' %}")
     }
 
     let totalPlanned = 0, totalSpent = 0;
+    container.innerHTML = ""; // reset container
     data.forEach((b, idx) => {
       totalPlanned += parseFloat(b.amount);
       totalSpent += parseFloat(b.spent);
 
-      const percent = Math.min((b.spent / b.amount) * 100, 100);
+      const percent = b.amount > 0 ? Math.min((b.spent / b.amount) * 100, 100) : 0;
       const color = b.overspent ? "bg-red-500" : percent > 80 ? "bg-yellow-500" : "bg-green-500";
-
-      // format month/year
-      const monthName = new Date(b.year, b.month - 1).toLocaleString("en-US", { month: "short" });
 
       container.innerHTML += `
         <div>
           <div class="flex justify-between mb-1 text-sm">
-            <span>Budget ${idx + 1} (${monthName} ${b.year})</span>
-            <span>Spent: ₹${b.spent} / Planned: ₹${b.amount} | Remaining: ₹${b.remaining}</span>
+            <span>Budget ${idx + 1} (${b.month_display} ${b.year})</span>
+            <span>Spent: ₹${b.spent.toFixed(2)} / Planned: ₹${b.amount.toFixed(2)} | Remaining: ₹${b.remaining.toFixed(2)}</span>
           </div>
           <div class="w-full bg-gray-200 rounded-full h-4">
             <div class="h-4 rounded-full ${color}" style="width: ${percent}%;"></div>
@@ -144,7 +148,7 @@ fetch("{% url 'current_month_budgets' %}")
 
     // update summary card with status
     const remaining = totalPlanned - totalSpent;
-    const percentSpent = (totalSpent / totalPlanned) * 100;
+    const percentSpent = totalPlanned > 0 ? (totalSpent / totalPlanned) * 100 : 0;
 
     let status = "🟢 On Track";
     if (totalSpent > totalPlanned) {
@@ -154,7 +158,7 @@ fetch("{% url 'current_month_budgets' %}")
     }
 
     summary.innerHTML = `
-      <p>Total Planned: ₹${totalPlanned} | Total Spent: ₹${totalSpent} | Remaining: ₹${remaining}</p>
+      <p>Total Planned: ₹${totalPlanned.toFixed(2)} | Total Spent: ₹${totalSpent.toFixed(2)} | Remaining: ₹${remaining.toFixed(2)}</p>
       <p class="mt-2">Status: <span class="font-semibold">${status}</span></p>
     `;
   });

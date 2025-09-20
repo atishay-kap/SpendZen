@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import Budget
 from .forms import BudgetForm
 
@@ -57,3 +58,24 @@ def budget_delete(request , id):
         messages.success(request , "Budget Deleted Successfully!!")
         return redirect("budgets:budget_list")
     return render(request, "budgets/budget_confirm_delete.html", {"budget": budget})
+
+from django.utils.timezone import now
+@login_required
+def current_month_budgets(request):
+    today = now()
+    budgets = Budget.objects.filter(user=request.user, month = today.month , year = today.year)
+    
+    data = [
+        {
+            "id": b.id,
+            "month": b.month,
+            "month_display": b.get_month_display(),
+            "year": b.year,
+            "amount": float(b.amount),
+            "spent": float(b.spent),
+            "remaining": float(b.remaining),
+            "overspent": b.overspent,
+        }
+        for b in budgets
+    ]
+    return JsonResponse(data , safe=False)

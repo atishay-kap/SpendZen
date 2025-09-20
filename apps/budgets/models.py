@@ -16,13 +16,9 @@ class Budget(BaseModel):
     
     class Meta:
         unique_together = ("user", "month", "year")
-
+            
     @property
-    def remaining(self):
-        return self.amount - self.spent
-    
-    @property
-    def spend(self):
+    def spent(self):
         from apps.expenses.models import Expense
         total = Expense.objects.filter(
             user=self.user,
@@ -30,3 +26,11 @@ class Budget(BaseModel):
             date__month=self.month,
         ).aggregate(models.Sum("amount"))["amount__sum"] or 0
         return total
+    
+    @property
+    def remaining(self):
+        return self.amount - self.spent
+    
+    @property
+    def overspent(self):
+        return self.spent > self.amount
